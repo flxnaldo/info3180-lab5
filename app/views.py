@@ -25,7 +25,7 @@ def home():
 @app.route('/about/')
 def about():
     """Render the website's about page."""
-    return render_template('about.html')
+    return render_template('about.html', name="Arnoldo Daley")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -47,18 +47,16 @@ def login():
             # passed to the login_user() method below.
 
             if user is not None and check_password_hash(user.password, password):
-                remember_me = False
 
-            if 'remember_me' in request.form:
-                remember_me = True
+                # get user id, load into session
+                login_user(user)
 
-            # get user id, load into session
-            login_user(user, remember=remember_me)
+                # remember to flash a message to the user
+                flash('Logged in successfully.', 'success')
 
-            # remember to flash a message to the user
-            flash('Logged in successfully.', 'success')
-
-            return redirect(url_for("secure_page"))  # they should be redirected to a secure-page route instead
+                return redirect(url_for("secure_page"))  # they should be redirected to a secure-page route instead
+            else:
+                flash('Log in not successfully.')
     return render_template("login.html", form=form)
 
 @app.route('/secure-page')
@@ -68,17 +66,24 @@ def secure_page():
     return render_template('secure_page.html')
 
 
+@app.route("/logout")
+@login_required
+def logout():
+    # Logout the user and end the session
+    logout_user()
+    flash('You have been logged out.', 'danger')
+    return redirect(url_for('home'))
+
 # user_loader callback. This callback is used to reload the user object from
 # the user ID stored in the session
 @login_manager.user_loader
 def load_user(id):
     return UserProfile.query.get(int(id))
 
+
 ###
 # The functions below should be applicable to all Flask apps.
 ###
-
-
 @app.route('/<file_name>.txt')
 def send_text_file(file_name):
     """Send your static text file."""
